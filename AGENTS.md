@@ -14,7 +14,7 @@ A classic Asteroids clone: one HTML file + one JS file, HTML5 Canvas, ES6 classe
 
 ## Gotchas that are easy to get wrong
 - Viewport size is duplicated: `W`/`H` in `game.js` must stay in sync with the `width`/`height` attributes on the canvas in `index.html`.
-- README overstates features: it mentions power-ups and a "estrella fugaz" asteroid, but neither exists in `game.js`. Trust the code, not the README feature list.
+- Power-ups exist as of now, but only one type (`'speed'`). Adding another means: a branch in `PowerUp.draw()`, a case in the pickup block (`p.type === ...`), and reset of `ship` state in `Ship.reset()` if it adds a field. Register the entity array in `initGame()`, `nextLevel()`, the per-frame update/draw loops, and the filters.
 - Input uses edge-triggered `pressed(code)` (reads and clears `justPressed`). Use it for one-shot actions like shooting; use `keys[code]` only for held keys. `pressed` mutates state, so call it once per action per frame.
 - Game state machine is `state = 'playing' | 'dead' | 'gameover'`. `update()` early-returns per state; new per-frame logic must be added to the right branch.
 - World is toroidal: positions go through `wrap(v, max)` (bullets, asteroids, ship). Particles deliberately do not wrap.

@@ -42,8 +42,9 @@ La apariencia de la nave se puede cambiar en cualquier momento con `S` (funciona
 | Delta   | ámbar        | alas en flecha invertida       |
 | Aguja   | violeta      | triángulo mínimo con halo      |
 | Ovni    | rosa         | platillo redondeado            |
+| Morada  | morado       | doble tamaño y doble puntuación |
 
-Las skins son **sólo cosméticas**: la hitbox no cambia. Mientras el power-up de Velocidad o el de Triple disparo están activos, la nave se dibuja en verde lima o cian respectivamente para no perder el feedback.
+La mayoría de las skins son **sólo cosméticas**: la hitbox no cambia. La **Morada** es la excepción: se dibuja al doble de escala, su hitbox y su burbuja de escudo también son el doble de grandes, y todos los puntos que consigues con ella se multiplican por 2 (el HUD lo indica con `x2`). Mientras el power-up de Velocidad o el de Triple disparo están activos, la nave se dibuja en verde lima o cian respectivamente para no perder el feedback.
 
 ## Puntuación
 
@@ -52,6 +53,8 @@ Las skins son **sólo cosméticas**: la hitbox no cambia. Mientras el power-up d
 | Grande    | 20     |
 | Mediano   | 50     |
 | Pequeño   | 100    |
+
+Con la skin **Morada** todos los puntos (asteroides y estrella fugaz) se duplican.
 
 ## Características
 

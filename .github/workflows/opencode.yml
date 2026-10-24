@@ -1,0 +1,88 @@
+name: OpenCode
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  # Revisión automática de pull requests.
+  review:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenCode
+        run: npm install --global @opencode/cli
+
+      - name: Review changes
+        run: |
+          opencode run --standalone --model opencode-go/deepseek-v4.1-flash \
+            "Review this repository for correctness and summarize any issues."
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+
+  # Implementa un issue cuando alguien lo menciona en un comentario.
+  implement:
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request == null &&
+      github.event.comment.user.type != 'Bot' &&
+      contains(github.event.comment.body, '@opencode') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ISSUE: ${{ github.event.issue.number }}
+      BRANCH: opencode/issue-${{ github.event.issue.number }}-${{ github.run_id }}
+    steps:
+      - name: Marcar comentario como leído
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/issues/comments/${{ github.event.comment.id }}/reactions" \
+            -f content=eyes > /dev/null
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install OpenCode
+        run: npm install --global @opencode/cli
+
+      - name: Preparar rama
+        run: |
+          git config user.name "opencode"
+          git config user.email "opencode@users.noreply.github.com"
+          git switch --create "$BRANCH"
+
+      - name: Implementar issue
+        run: |
+          opencode run --standalone --auto --model opencode-go/deepseek-v4.1-flash \
+            "Implementa el issue #$ISSUE de este repositorio. Petición: $(gh issue view "$ISSUE" --json title,body --jq '.title + " — " + .body'). Respeta AGENTS.md y el estilo del código existente."
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+
+      - name: Commit y pull request
+        run: |
+          git add -A
+          if git diff --cached --quiet && [ "$(git rev-list --count origin/main..HEAD)" = "0" ]; then
+            gh issue comment "$ISSUE" --body "No he hecho cambios: la petición no requería modificar archivos."
+            exit 0
+          fi
+          git commit -m "feat: implementa #$ISSUE" || true
+          git push --set-upstream origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "Implementa #$ISSUE" \
+            --body "Implementación automática del issue #$ISSUE. Revisa los cambios antes de fusionar."
+          gh issue comment "$ISSUE" --body "He abierto un pull request con la implementación en la rama \`$BRANCH\`."

@@ -41,11 +41,10 @@ jobs:
     permissions:
       contents: write
       issues: write
-      pull-requests: write
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ISSUE: ${{ github.event.issue.number }}
-      BRANCH: opencode/issue-${{ github.event.issue.number }}-${{ github.run_id }}
+      BRANCH: opencode/issue-${{ github.event.issue.number }}
     steps:
       - name: Marcar comentario como leído
         run: |
@@ -64,7 +63,7 @@ jobs:
         run: |
           git config user.name "opencode"
           git config user.email "opencode@users.noreply.github.com"
-          git switch --create "$BRANCH"
+          git switch --force-create "$BRANCH"
 
       - name: Implementar issue
         run: |
@@ -73,7 +72,7 @@ jobs:
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
 
-      - name: Commit y pull request
+      - name: Commit y push
         run: |
           git add -A
           if git diff --cached --quiet && [ "$(git rev-list --count origin/main..HEAD)" = "0" ]; then
@@ -81,8 +80,5 @@ jobs:
             exit 0
           fi
           git commit -m "feat: implementa #$ISSUE" || true
-          git push --set-upstream origin "$BRANCH"
-          gh pr create --base main --head "$BRANCH" \
-            --title "Implementa #$ISSUE" \
-            --body "Implementación automática del issue #$ISSUE. Revisa los cambios antes de fusionar."
-          gh issue comment "$ISSUE" --body "He abierto un pull request con la implementación en la rama \`$BRANCH\`."
+          git push --force-with-lease --set-upstream origin "$BRANCH"
+          gh issue comment "$ISSUE" --body "Cambios subidos en la rama \`$BRANCH\`. Revísalos aquí: https://github.com/$GITHUB_REPOSITORY/compare/main...$BRANCH"

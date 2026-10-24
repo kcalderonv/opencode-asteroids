@@ -34,7 +34,7 @@ jobs:
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request == null &&
       github.event.comment.user.type != 'Bot' &&
-      contains(github.event.comment.body, '@opencode') &&
+      contains(github.event.comment.body, '/oc') &&
       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
     timeout-minutes: 30

@@ -4,7 +4,7 @@ Clon del clásico arcade **Asteroids** implementado en canvas HTML5 puro, sin de
 
 ## Descripción
 
-Nave espacial en un campo de asteroides con envolvimiento de bordes (el espacio es toroidal). Destruye asteroides para sumar puntos: los grandes se parten en medianos, los medianos en pequeños. Incluye un power-up de **Velocidad** que aparece al destruir asteroides, y una **estrella fugaz** que cruza el campo a gran velocidad y se desvanece sola.
+Nave espacial en un campo de asteroides con envolvimiento de bordes (el espacio es toroidal). Destruye asteroides para sumar puntos: los grandes se parten en medianos, los medianos en pequeños. Incluye tres power-ups (**Velocidad**, **Escudo** y **Triple disparo**) que aparecen al destruir asteroides, skins de nave seleccionables, y una **estrella fugaz** que cruza el campo a gran velocidad y se desvanece sola.
 
 ## Tecnologías
 
@@ -43,7 +43,7 @@ La apariencia de la nave se puede cambiar en cualquier momento con `S` (funciona
 | Aguja   | violeta      | triángulo mínimo con halo      |
 | Ovni    | rosa         | platillo redondeado            |
 
-Las skins son **sólo cosméticas**: la hitbox no cambia, y mientras el power-up de Velocidad está activo la nave se sigue dibujando en verde lima para no perder el feedback.
+Las skins son **sólo cosméticas**: la hitbox no cambia. Mientras el power-up de Velocidad o el de Triple disparo están activos, la nave se dibuja en verde lima o cian respectivamente para no perder el feedback.
 
 ## Puntuación
 
@@ -58,7 +58,7 @@ Las skins son **sólo cosméticas**: la hitbox no cambia, y mientras el power-up
 - 3 vidas con invencibilidad temporal al reaparecer (parpadeo)
 - Asteroides se parten en fragmentos más pequeños al ser destruidos
 - Partículas de explosión al destruir asteroides
-- Power-up de Velocidad (rombo verde lima)
+- Power-ups de Velocidad (rombo verde lima), Escudo (hexágono azul) y Triple disparo (triángulo cian)
 - Estrella fugaz: asteroide veloz y esporádico que se desvanece solo
 
 ## Estrella fugaz
@@ -70,11 +70,14 @@ Las skins son **sólo cosméticas**: la hitbox no cambia, y mientras el power-up
 
 ## Power-ups
 
-| Power-up  | Efecto                                       | Duración |
-| --------- | -------------------------------------------- | -------- |
-| Velocidad | Duplica el empuje de la nave                 | 5 s      |
+| Power-up       | Efecto                                                    | Duración |
+| -------------- | --------------------------------------------------------- | -------- |
+| Velocidad      | Duplica el empuje de la nave                              | 5 s      |
+| Escudo         | La nave destruye los asteroides que la golpean sin daño    | 8 s      |
+| Triple disparo | Dispara tres balas paralelas en cada disparo              | 5 s      |
 
-- Aparece con ~20% de probabilidad al destruir cualquier asteroide.
+- Aparece con ~20% de probabilidad al destruir cualquier asteroide, con el tipo sorteado a partes iguales (1/3 cada uno).
 - Permanece en el campo 10 s antes de desvanecerse (parpadea al final).
-- Mientras está activo, la nave se dibuja en verde lima, deja una estela y el HUD muestra el tiempo restante.
-- Recoger otro durante el efecto reinicia el contador a 5 s.
+- Mientras está activo, el HUD muestra el tiempo restante de cada efecto apilado, y la nave cambia de color: verde lima con Velocidad, cian con Triple disparo.
+- El Escudo dibuja una burbuja azul alrededor de la nave con un arco que marca el tiempo que le queda; no se consume al recibir un impacto, sólo caduca.
+- Recoger otro power-up del mismo tipo durante el efecto reinicia su contador.

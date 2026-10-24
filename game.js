@@ -77,8 +77,8 @@ const TRIPLE_SPREAD   = 9;         // separación perpendicular entre las 3 bala
 // Escudo
 const SHIELD_DURATION = 8;                  // segundos que protege la nave
 const SHIELD_RADIUS   = 24;                 // radio visual de la burbuja
-const SHIELD_COLOR    = '#5fd8ff';          // cian: distinto del verde de Velocidad
-const SHIELD_RGB      = '95, 216, 255';
+const SHIELD_COLOR    = '#4f8bff';          // azul: distinto del cian de Triple
+const SHIELD_RGB      = '79, 139, 255';
 
 // Estrella fugaz
 const STAR_SPEED        = 200;              // px/s (frente a 32/55/85 de los asteroides)

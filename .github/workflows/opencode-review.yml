@@ -1,0 +1,31 @@
+name: OpenCode review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opencode-review-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenCode
+        run: npm install --global @opencode/cli
+
+      - name: Review changes
+        run: |
+          opencode run --standalone --model opencode-go/deepseek-v4.1-flash \
+            "Review this repository for correctness and summarize any issues."
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}

@@ -1,0 +1,110 @@
+name: Issue triage
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: issue-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    if: github.event.issue.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ISSUE: ${{ github.event.issue.number }}
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenCode
+        run: npm install --global @opencode/cli
+
+      - name: Guardar issue original
+        env:
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+        run: |
+          printf '%s' "$TITLE" > "$RUNNER_TEMP/title.txt"
+          printf '%s' "$BODY" > "$RUNNER_TEMP/body.txt"
+
+      - name: Analizar issue
+        run: |
+          cat > "$RUNNER_TEMP/prompt.txt" <<PROMPT
+          Analiza el issue de este repositorio. El título está en $RUNNER_TEMP/title.txt y el cuerpo en $RUNNER_TEMP/body.txt: léelos.
+
+          Lee AGENTS.md y el código (game.js, index.html) para identificar los archivos implicados.
+
+          Responde SOLO con un objeto JSON válido, sin markdown, sin fences y sin texto adicional, con exactamente esta forma:
+          {"tipo":"bug|feature|docs|question","area":"input|render|powerups|skins|colisiones|puntuacion|otro","labels":["bug"],"archivos":["game.js"],"falta":["pasos para reproducir"],"resumen":"una frase","siguiente":"un paso concreto"}
+
+          Reglas:
+          - "labels" solo puede contener: bug, enhancement, documentation, question, accessibility, good first issue, help wanted.
+          - "archivos" son rutas reales del repositorio, máximo 5.
+          - "falta" lista lo que el autor no explicó y haría falta para investigar; vacío si no falta nada.
+          - No inventes datos: si algo no se deduce del issue, no lo afirmes.
+          PROMPT
+          opencode run --standalone --model opencode-go/deepseek-v4.1-flash "$(cat "$RUNNER_TEMP/prompt.txt")" \
+            > "$RUNNER_TEMP/triage.raw" 2> "$RUNNER_TEMP/triage.err" || true
+
+      - name: Validar resultado
+        id: parse
+        run: |
+          echo "ok=false" >> "$GITHUB_OUTPUT"
+          if jq -e 'type == "object"' "$RUNNER_TEMP/triage.raw" > /dev/null 2>&1; then
+            cp "$RUNNER_TEMP/triage.raw" "$RUNNER_TEMP/triage.json"
+          else
+            sed -n '/^[[:space:]]*{/,/^[[:space:]]*}/p' "$RUNNER_TEMP/triage.raw" > "$RUNNER_TEMP/triage.json"
+          fi
+          if [ ! -s "$RUNNER_TEMP/triage.json" ] || ! jq -e 'type == "object"' "$RUNNER_TEMP/triage.json" > /dev/null 2>&1; then
+            echo "::warning::El modelo no devolvió JSON válido"
+            head -40 "$RUNNER_TEMP/triage.raw" "$RUNNER_TEMP/triage.err" || true
+            exit 0
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+          jq . "$RUNNER_TEMP/triage.json"
+
+      - name: Aplicar etiquetas
+        if: steps.parse.outputs.ok == 'true'
+        run: |
+          ALLOWED='["bug","enhancement","documentation","question","accessibility","good first issue","help wanted"]'
+          jq -r --argjson allowed "$ALLOWED" \
+            '[.labels[]? | select(. as $l | $allowed | index($l))] | .[]' \
+            "$RUNNER_TEMP/triage.json" |
+            while IFS= read -r label; do
+              if [ -n "$label" ]; then
+                gh issue edit "$ISSUE" --add-label "$label"
+              fi
+            done
+
+      - name: Publicar triage
+        if: steps.parse.outputs.ok == 'true'
+        run: |
+          jq -r '
+            "## 🤖 Triage automático\n\n" +
+            "**Tipo:** " + (.tipo // "sin determinar") +
+            "  \n**Área:** " + (.area // "sin determinar") + "\n\n" +
+            (if (.resumen // "") != "" then "**Resumen:** " + .resumen + "\n\n" else "" end) +
+            (if ((.archivos // []) | length) > 0 then
+              "**Archivos probablemente implicados:**\n" +
+              ([.archivos[] | "- `" + . + "`"] | join("\n")) + "\n\n" else "" end) +
+            (if ((.falta // []) | length) > 0 then
+              "**Información que falta:**\n" +
+              ([.falta[] | "- " + .] | join("\n")) + "\n\n" else "" end) +
+            (if (.siguiente // "") != "" then "**Siguiente paso:** " + .siguiente + "\n\n" else "" end) +
+            "_Generado automáticamente. El texto original del issue no se ha modificado._"
+          ' "$RUNNER_TEMP/triage.json" > "$RUNNER_TEMP/comment.md"
+          gh issue comment "$ISSUE" --body-file "$RUNNER_TEMP/comment.md"
+
+      - name: Avisar si no se pudo analizar
+        if: steps.parse.outputs.ok != 'true'
+        run: |
+          gh issue comment "$ISSUE" --body "No se pudo generar el triage automático de este issue. Revísalo manualmente."

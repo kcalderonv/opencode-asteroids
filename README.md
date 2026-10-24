@@ -29,6 +29,21 @@ Luego visita `http://localhost:3000`.
 | `←` `→`   | Rotar nave |
 | `↑`       | Propulsar  |
 | `Espacio` | Disparar   |
+| `S`       | Cambiar skin de la nave |
+
+## Skins
+
+La apariencia de la nave se puede cambiar en cualquier momento con `S` (funciona también en la pantalla de Game Over). La elección se guarda en `localStorage` y se restaura al volver a abrir el juego.
+
+| Skin    | Color        | Rasgo                          |
+| ------- | ------------ | ------------------------------ |
+| Clásica | blanco       | triángulo con muesca trasera   |
+| Dardo   | cian         | flecha estrecha y alargada     |
+| Delta   | ámbar        | alas en flecha invertida       |
+| Aguja   | violeta      | triángulo mínimo con halo      |
+| Ovni    | rosa         | platillo redondeado            |
+
+Las skins son **sólo cosméticas**: la hitbox no cambia, y mientras el power-up de Velocidad está activo la nave se sigue dibujando en verde lima para no perder el feedback.
 
 ## Puntuación
 
